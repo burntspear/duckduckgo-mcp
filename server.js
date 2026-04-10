@@ -4,9 +4,32 @@ const axios = require('axios');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.get('/search', async (req, res) => {
-  const query = req.query.q;
-  if (!query) return res.status(400).send('Missing query parameter');
+// Middleware to parse JSON bodies (needed for MCP POST requests)
+app.use(express.json());
+
+// MCP manifest route
+app.get('/mcp/manifest', (req, res) => {
+  res.json({
+    tools: [
+      {
+        name: "search",
+        description: "Search memes using Reddit, DuckDuckGo, and KnowYourMeme",
+        input_schema: {
+          type: "object",
+          properties: {
+            query: { type: "string" }
+          },
+          required: ["query"]
+        }
+      }
+    ]
+  });
+});
+
+// MCP tool execution route
+app.post('/mcp/tools/search', async (req, res) => {
+  const { query } = req.body;
+  if (!query) return res.status(400).json({ error: "Missing query parameter" });
 
   try {
     // 1. Reddit chatter
@@ -14,7 +37,6 @@ app.get('/search', async (req, res) => {
       `https://www.reddit.com/search.json?q=${encodeURIComponent(query)}&limit=20`
     );
     const redditData = redditResponse.data;
-
     const redditResults = redditData.data.children.map(post => ({
       title: post.data.title,
       url: 'https://reddit.com' + post.data.permalink,
@@ -34,7 +56,7 @@ app.get('/search', async (req, res) => {
         }))
       : [];
 
-    // 3. KnowYourMeme search link (dynamic for any query)
+    // 3. KnowYourMeme search link
     const kymSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(query + " site:knowyourmeme.com")}`;
 
     // Unified response
@@ -56,8 +78,15 @@ app.get('/search', async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-    res.status(500).send('Error fetching data');
+    res.status(500).json({ error: "Error fetching data" });
   }
+});
+
+// Keep your original /search route for browser testing
+app.get('/search', async (req, res) => {
+  const query = req.query.q;
+  if (!query) return res.status(400).send('Missing query parameter');
+  // ... same logic as before ...
 });
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
