@@ -1,15 +1,19 @@
 const express = require('express');
 const axios = require('axios');
+const cors = require('cors');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware to parse JSON bodies (needed for MCP POST requests)
+// Middleware
 app.use(express.json());
+app.use(cors());
 
 // MCP manifest route
 app.get('/mcp/manifest', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
   res.json({
+    version: "1.0.0",
     tools: [
       {
         name: "search",
@@ -28,8 +32,15 @@ app.get('/mcp/manifest', (req, res) => {
 
 // MCP tool execution route
 app.post('/mcp/tools/search', async (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
   const { query } = req.body;
-  if (!query) return res.status(400).json({ error: "Missing query parameter" });
+  if (!query) {
+    return res.status(400).json({
+      output: [
+        { content: [{ type: "text", text: "Missing query parameter" }] }
+      ]
+    });
+  }
 
   try {
     // 1. Reddit chatter
@@ -59,26 +70,41 @@ app.post('/mcp/tools/search', async (req, res) => {
     // 3. KnowYourMeme search link
     const kymSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(query + " site:knowyourmeme.com")}`;
 
-    // Unified response
+    // MCP-compliant response envelope
     res.json({
-      query,
-      factual: {
-        heading: ddgData.Heading || '',
-        source: ddgData.AbstractSource || '',
-        count: factualResults.length,
-        results: factualResults
-      },
-      reddit: {
-        count: redditResults.length,
-        results: redditResults
-      },
-      knowYourMeme: {
-        searchUrl: kymSearchUrl
-      }
+      output: [
+        {
+          content: [
+            {
+              type: "json",
+              json: {
+                query,
+                factual: {
+                  heading: ddgData.Heading || '',
+                  source: ddgData.AbstractSource || '',
+                  count: factualResults.length,
+                  results: factualResults
+                },
+                reddit: {
+                  count: redditResults.length,
+                  results: redditResults
+                },
+                knowYourMeme: {
+                  searchUrl: kymSearchUrl
+                }
+              }
+            }
+          ]
+        }
+      ]
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Error fetching data" });
+    res.status(500).json({
+      output: [
+        { content: [{ type: "text", text: "Error fetching data" }] }
+      ]
+    });
   }
 });
 
