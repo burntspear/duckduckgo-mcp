@@ -41,6 +41,32 @@ app.post('/mcp', async (req, res) => {
 
   try {
     switch (method) {
+      case "initialize":
+        // Respond to MCP Client handshake
+        return res.json({
+          jsonrpc: "2.0",
+          id,
+          result: {
+            protocolVersion: params?.protocolVersion || "2025-11-25",
+            capabilities: {
+              tools: true
+            },
+            serverInfo: {
+              name: "duckduckgo-mcp-server",
+              version: "1.0.0"
+            }
+          }
+        });
+
+      case "shutdown":
+        // Gracefully acknowledge shutdown
+        console.log("MCP Client requested shutdown.");
+        return res.json({
+          jsonrpc: "2.0",
+          id,
+          result: { message: "Server shutting down gracefully" }
+        });
+
       case "tools/list":
       case "tool.list": // allow alias if n8n uses this
         return res.json({
@@ -56,7 +82,7 @@ app.post('/mcp', async (req, res) => {
         }
 
         if (params.name === "search") {
-          const { query } = params.arguments || {};
+          const { query } = params.arguments || params; // support both styles
           if (!query) {
             return res.json({ jsonrpc: "2.0", id, error: { code: -32602, message: "Missing query parameter" } });
           }
