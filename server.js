@@ -9,31 +9,39 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(cors());
 
-// MCP manifest route
+// MCP manifest route (GET + POST)
+const manifestResponse = {
+  version: "1.0.0",
+  tools: [
+    {
+      name: "search",
+      description: "Search memes using Reddit, DuckDuckGo, and KnowYourMeme",
+      input_schema: {
+        type: "object",
+        properties: {
+          query: { type: "string" }
+        },
+        required: ["query"]
+      }
+    }
+  ]
+};
+
 app.get('/mcp/manifest', (req, res) => {
   res.setHeader('Content-Type', 'application/json');
-  res.json({
-    version: "1.0.0",
-    tools: [
-      {
-        name: "search",
-        description: "Search memes using Reddit, DuckDuckGo, and KnowYourMeme",
-        input_schema: {
-          type: "object",
-          properties: {
-            query: { type: "string" }
-          },
-          required: ["query"]
-        }
-      }
-    ]
-  });
+  res.json(manifestResponse);
+});
+
+app.post('/mcp/manifest', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.json(manifestResponse);
 });
 
 // MCP tool execution route
 app.post('/mcp/tools/search', async (req, res) => {
   res.setHeader('Content-Type', 'application/json');
   const { query } = req.body;
+
   if (!query) {
     return res.status(400).json({
       output: [
@@ -108,11 +116,11 @@ app.post('/mcp/tools/search', async (req, res) => {
   }
 });
 
-// Keep your original /search route for browser testing
+// Simple search route for browser testing
 app.get('/search', async (req, res) => {
   const query = req.query.q;
   if (!query) return res.status(400).send('Missing query parameter');
-  // ... same logic as before ...
+  res.send(`Search route hit with query: ${query}`);
 });
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
