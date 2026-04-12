@@ -29,6 +29,10 @@ const manifestResponse = {
 // JSON-RPC dispatcher
 app.post('/mcp', async (req, res) => {
   res.setHeader('Content-Type', 'application/json');
+
+  // 🔍 Log the full incoming request body
+  console.log("Incoming MCP request:", JSON.stringify(req.body, null, 2));
+
   const { jsonrpc, id, method, params } = req.body;
 
   if (jsonrpc !== "2.0") {
@@ -38,6 +42,7 @@ app.post('/mcp', async (req, res) => {
   try {
     switch (method) {
       case "tools/list":
+      case "tool.list": // allow alias if n8n uses this
         return res.json({
           jsonrpc: "2.0",
           id,
@@ -45,6 +50,7 @@ app.post('/mcp', async (req, res) => {
         });
 
       case "tools/call":
+      case "tool.call": // allow alias if n8n uses this
         if (!params || !params.name) {
           return res.json({ jsonrpc: "2.0", id, error: { code: -32602, message: "Missing tool name" } });
         }
@@ -120,7 +126,7 @@ app.post('/mcp', async (req, res) => {
         return res.json({ jsonrpc: "2.0", id, error: { code: -32601, message: "Unknown method" } });
     }
   } catch (error) {
-    console.error(error);
+    console.error("Internal error:", error);
     return res.json({ jsonrpc: "2.0", id, error: { code: -32603, message: "Internal error" } });
   }
 });
