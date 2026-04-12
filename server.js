@@ -15,7 +15,7 @@ const manifestResponse = {
     {
       name: "search",
       description: "Search memes using Reddit, DuckDuckGo, and KnowYourMeme",
-      input_schema: {
+      inputSchema: {   // changed to camelCase
         type: "object",
         properties: {
           query: { type: "string" }
@@ -30,7 +30,6 @@ const manifestResponse = {
 app.post('/mcp', async (req, res) => {
   res.setHeader('Content-Type', 'application/json');
 
-  // 🔍 Log the full incoming request body
   console.log("Incoming MCP request:", JSON.stringify(req.body, null, 2));
 
   const { jsonrpc, id, method, params } = req.body;
@@ -42,14 +41,13 @@ app.post('/mcp', async (req, res) => {
   try {
     switch (method) {
       case "initialize":
-        // Respond to MCP Client handshake
         return res.json({
           jsonrpc: "2.0",
           id,
           result: {
             protocolVersion: params?.protocolVersion || "2025-11-25",
             capabilities: {
-              tools: {}   // must be an object, not boolean
+              tools: {}   //  changed to an object
             },
             serverInfo: {
               name: "duckduckgo-mcp-server",
@@ -59,7 +57,6 @@ app.post('/mcp', async (req, res) => {
         });
 
       case "shutdown":
-        // Gracefully acknowledge shutdown
         console.log("MCP Client requested shutdown.");
         return res.json({
           jsonrpc: "2.0",
@@ -68,7 +65,7 @@ app.post('/mcp', async (req, res) => {
         });
 
       case "tools/list":
-      case "tool.list": // allow alias if n8n uses this
+      case "tool.list":
         return res.json({
           jsonrpc: "2.0",
           id,
@@ -76,13 +73,13 @@ app.post('/mcp', async (req, res) => {
         });
 
       case "tools/call":
-      case "tool.call": // allow alias if n8n uses this
+      case "tool.call":
         if (!params || !params.name) {
           return res.json({ jsonrpc: "2.0", id, error: { code: -32602, message: "Missing tool name" } });
         }
 
         if (params.name === "search") {
-          const { query } = params.arguments || params; // support both styles
+          const { query } = params.arguments || params;
           if (!query) {
             return res.json({ jsonrpc: "2.0", id, error: { code: -32602, message: "Missing query parameter" } });
           }
