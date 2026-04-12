@@ -49,7 +49,7 @@ app.post('/mcp', async (req, res) => {
           result: {
             protocolVersion: params?.protocolVersion || "2025-11-25",
             capabilities: {
-              tools: true
+              tools: {}   // must be an object, not boolean
             },
             serverInfo: {
               name: "duckduckgo-mcp-server",
